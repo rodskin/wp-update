@@ -1,0 +1,32 @@
+#wp-update_table {
+    width: 100%;
+    text-align: left;
+    border: 1px solid grey;
+}
+
+#wp-update_table th {
+    font-weight: bold;
+    font-size: 16px;
+    padding: 5px 2px;
+}
+
+#wp-update_table tr td {
+    padding: 3px 2px;
+    border-top: 1px solid grey;
+}
+
+.update_table_filename {
+    width: 70%;
+}
+.wp-update_table_status {
+    width: 15%;
+}
+.wp-update_table_date {
+    width: 15%;
+}
+#wp-update_table .update_ok {
+    color: green;
+}
+#wp-update_table .update_nok {
+    color: orange;
+}
