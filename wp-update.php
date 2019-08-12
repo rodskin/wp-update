@@ -23,6 +23,11 @@ class WP_Update_Plugin
 
     public function add_hook()
     {
+        // Only allow fields to be edited on development
+
+        if ( !defined( 'WP_LOCAL_DEV' ) || !WP_LOCAL_DEV ) {
+            add_filter( 'acf/settings/show_admin', '__return_false' );
+        }
         add_action('admin_init', array($this, 'import_updates'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_css_js'));
@@ -43,7 +48,11 @@ class WP_Update_Plugin
 
     public function add_admin_menu()
     {
-        add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'));
+        // show the menu link only for administrator
+        $user = wp_get_current_user()->roles[0];
+        if($user == 'administrator') {
+            add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'));
+        }
     }
 
     public function home_html()
