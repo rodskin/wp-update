@@ -4,7 +4,7 @@ Plugin Name: Wordpress Update
 Description: Update Wordpress with ACFs and Databases updates versionned
 Version: 0.1
 Author: Rodskin
-Author URI: https://ko-fi.com/rodskin
+Author URI: https://rodskin.github.io/
 */
 
 
