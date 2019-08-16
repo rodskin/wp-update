@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: WP Update
-Plugin URI: https://rodskin.github.io
+Plugin URI: https://github.com/rodskin/wp-update
 Description: Update Wordpress with ACFs and Databases updates versionned
 Version: 0.1
 Author: Rodskin
