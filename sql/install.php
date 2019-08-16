@@ -4,6 +4,7 @@ $requests = array();
 $requests[] = 'CREATE TABLE IF NOT EXISTS `' . $wpdb->prefix . 'wp_update` (
             `ID` INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
             `name` VARCHAR(50) NOT NULL,
+            `status` INT(1),
             `date_install` DATE
         );';
 

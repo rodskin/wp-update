@@ -22,11 +22,17 @@
     width: 15%;
 }
 .wp-update_table_date {
-    width: 15%;
+    width: 10%;
+}
+.wp-update_table_reload {
+    width: 5%;
 }
 #wp-update_table .update_ok {
     color: green;
 }
-#wp-update_table .update_nok {
+#wp-update_table .update_ko {
+    color: red;
+}
+#wp-update_table .update_todo {
     color: orange;
 }

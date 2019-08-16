@@ -1,6 +1,7 @@
 <?php
 /*
-Plugin Name: Wordpress Update
+Plugin Name: WP Update
+Plugin URI: https://rodskin.github.io
 Description: Update Wordpress with ACFs and Databases updates versionned
 Version: 0.1
 Author: Rodskin
@@ -66,6 +67,7 @@ class WP_Update_Plugin
                         <th class="wp-update_table_filename">Nom du fichier</th>
                         <th class="wp-update_table_status">Status</th>
                         <th class="wp-update_table_date">Date import</th>
+                        <th class="wp-update_table_reload">Relancer</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -79,16 +81,23 @@ class WP_Update_Plugin
                     <td><?php echo $file; ?></td>
                     <?php
                     if (!empty($file_infos)) {
+                        if ($file_infos[0]->status == '1') {
                     ?>
-                        <td class="update_ok">Importé</td>
+                    <td class="update_ok">Success</td>
                     <?php
+                        } else {
+                    ?>
+                    <td class="update_ko">Error</td>
+                    <?php
+                        }
                     } else {
                     ?>
-                        <td class="update_ko">À importer</td>
+                        <td class="update_todo">À importer</td>
                     <?php
                     }
                     ?>
-                    <td><?php echo !empty($file_infos)? $file_infos[0]->date_install: '-'; ?></td>
+                    <td><?php echo !empty($file_infos)? $file_infos[0]->date_install : '-'; ?></td>
+                    <td><?php echo ($file_infos[0]->status == '0' ? '<a href="?page=' . $_GET['page'] . '&reload_update=' . $file_infos[0]->ID . '">relancer</a>' : ''); ?></td>
                 </tr>
                 <?php } ?>
                 </tbody>
@@ -108,6 +117,9 @@ class WP_Update_Plugin
 
     public function import_updates()
     {
+        if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
+            $this->reupload_file($_GET['reload_update']);
+        }
         if (!empty($_POST) && count($_POST) > 0) {
             $this->import_updates_files();
         }
@@ -132,28 +144,58 @@ class WP_Update_Plugin
 
     public function import_updates_files ()
     {
-
         $directory = plugin_dir_path( __FILE__ ) . 'data';
         $scanned_directory = $this->get_scanned_dir_files($directory);
         foreach ($scanned_directory as $file) {
             $file_infos = $this->get_file_infos($file);
             if (empty($file_infos)) {
                 include_once($directory . '/' . $file);
-                $this->save_file_update($file);
             }
         }
     }
 
-    public function save_file_update ($filename)
+    public function reupload_file($id)
     {
         global $wpdb;
-        $sql = 'INSERT INTO `' . $wpdb->prefix . 'wp_update` (`name`, `date_install`) VALUES ("' . $filename . '", "' . date('Y-m-d') . '")';
-        $query_result = $wpdb->query($sql);
-        if ($query_result !== false) {
-            new WP_Update_Messages('Import de ' . $filename, 'notice-success');
+        $sql = 'SELECT *
+                FROM `' . $wpdb->prefix . 'wp_update`
+                WHERE `ID` = ' . $id . '
+                LIMIT 1';
+        $file_infos = $wpdb->get_results($sql);
+        //print_r($file_infos);die();
+        $directory = plugin_dir_path( __FILE__ ) . 'data';
+        if (!empty($file_infos)) {
+            $sql = 'DELETE FROM `' . $wpdb->prefix . 'wp_update` WHERE `ID` = ' . $id;
+            $wpdb->query($sql);
+            include_once($directory . '/' . $file_infos[0]->name);
         } else {
-            new WP_Update_Messages('Import de ' . $filename, 'error');
+            new WP_Update_Messages('Fichier inexistant', 'error');
         }
+
+    }
+
+    public function save_file_update ($filename, $status)
+    {
+        //var_dump($status); die();
+        global $wpdb;
+        $sql = 'INSERT INTO `' . $wpdb->prefix . 'wp_update` (`name`, `status`, `date_install`) VALUES ("' . $filename . '", "' . ($status !== false ? '1' : '0') . '", "' . date('Y-m-d') . '")';
+        $query_result = $wpdb->query($sql);
+        //var_dump($sql);
+        //die();
+        if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
+            wp_redirect('admin.php?page=wp-update');
+            exit;
+        }
+        if ($query_result !== false) {
+            if ($status === true) {
+                new WP_Update_Messages('Import de ' . $filename, 'notice-success');
+            } else {
+                new WP_Update_Messages('Erreur dans le fichier d\'import de ' . $filename, 'error');
+            }
+        } else {
+            new WP_Update_Messages('Erreur lors de l\'ajout en base de données de ' . $filename, 'error');
+        }
+
     }
 
     public function get_local_json_path() {
