@@ -60,7 +60,8 @@ class WP_Update_Plugin
     {
         echo '<h1>' . get_admin_page_title() . '</h1>';
 ?>
-        <form method="post" action="">
+        <form method="post" id="wp-update" action="">
+            <input type="hidden" name="wp-update_hidden" value="0" />
             <table id="wp-update_table" cellpading="0" cellspacing="0">
                 <thead>
                     <tr>
@@ -117,6 +118,7 @@ class WP_Update_Plugin
 
     public function import_updates()
     {
+        //var_dump($_POST);die();
         if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
             $this->reupload_file($_GET['reload_update']);
         }
