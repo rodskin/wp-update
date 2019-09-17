@@ -13,9 +13,11 @@ require ('classes/wp-update-messages.php');
 
 class WP_Update_Plugin
 {
+    protected $plugin_path = '';
+
     public function __construct()
     {
-        global $type_centrale;
+        $this->plugin_path = plugin_dir_path( __FILE__ );
         register_activation_hook(__FILE__, array('WP_Update_Plugin', 'install'));
         $this->add_hook();
         // END CONSTRUCT
@@ -26,7 +28,7 @@ class WP_Update_Plugin
     {
         // Only allow fields to be edited on development
 
-        if ( !defined( 'WP_LOCAL_DEV' ) || !WP_LOCAL_DEV ) {
+        if ( (!defined( 'WP_ENVIRONNMENT' ) || !in_array(WP_ENVIRONNMENT, array('local', 'preprod'))) ) {
             add_filter( 'acf/settings/show_admin', '__return_false' );
         }
         add_action('admin_init', array($this, 'import_updates'));
@@ -52,8 +54,30 @@ class WP_Update_Plugin
         // show the menu link only for administrator
         $user = wp_get_current_user()->roles[0];
         if($user == 'administrator') {
-            add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'));
+            add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'), 'dashicons-update', 666);
         }
+
+        add_filter( 'add_menu_classes', array($this, 'add_updates_bubble'));
+    }
+
+    public function add_updates_bubble( $menu )
+    {
+        $pending_count = $this->get_updates_bubble_count(); // Use your code to create this number
+        $menu[666][0] .= " <span class='update-plugins count-$pending_count'><span class='plugin-count'>" . number_format_i18n($pending_count) . '</span></span>';
+        return $menu;
+    }
+
+    public function get_updates_bubble_count () {
+        $directory = plugin_dir_path( __FILE__ ) . 'data';
+        $scanned_directory = $this->get_scanned_dir_files($directory);
+        $return_number = 0;
+        foreach ($scanned_directory as $file) {
+            $file_infos = $this->get_file_infos($file);
+            if (empty($file_infos)) {
+                $return_number ++;
+            }
+        }
+        return $return_number;
     }
 
     public function home_html()
@@ -122,7 +146,7 @@ class WP_Update_Plugin
         if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
             $this->reupload_file($_GET['reload_update']);
         }
-        if (!empty($_POST) && count($_POST) > 0) {
+        if (!empty($_POST) && count($_POST) > 0 && isset($_POST['wp-update_hidden'])) {
             $this->import_updates_files();
         }
     }
