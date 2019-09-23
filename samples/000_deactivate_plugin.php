@@ -1,23 +1,24 @@
 <?php
 // exemple de script d'activation de module
-$plugin_name = 'hello.php'; // hello.php is basic test module. for acf for example it will be "advanced-custom-fields-pro/acf.php"
-global $wpdb;
-$sql = 'SELECT *
-        FROM `' . $wpdb->prefix . 'options` 
-        WHERE `option_name` = "active_plugins"
-        LIMIT 1';
-$result = $wpdb->get_results($sql);
+$plugins = 'hello.php'; // hello.php is basic test module. for wp-update for example it will be "wp-update/wp-update.php"
 
-$modules_activated = unserialize($result[0]->option_value);
+/**
+ * Deactivate a single plugin or multiple plugins.
+ *
+ * The deactivation hook is disabled by the plugin upgrader by using the $silent
+ * parameter.
+ *
+ * @since 2.5.0
+ *
+ * @param string|array $plugins Single plugin or list of plugins to deactivate.
+ * @param bool $silent Prevent calling deactivation hooks. Default is false.
+ * @param mixed $network_wide Whether to deactivate the plugin for all sites in the network.
+ * 	A value of null (the default) will deactivate plugins for both the site and the network.
+ */
+$result = deactivate_plugins($plugins);
 
-$modules_activated_flip = array_flip($modules_activated);
-
-unset($modules_activated[$modules_activated_flip[$plugin_name]]);
-
-$active_plugins = serialize($modules_activated);
-
-$sql = 'UPDATE `' . $wpdb->prefix . 'options`
-        SET `option_value` = "' . str_replace('"', '\"', $active_plugins) . '"
-        WHERE `option_id` = ' . $result[0]->option_id;
-$wpdb->query($sql);
-
+if (is_wp_error($result)) {
+    $this->save_file_update($file, false);
+} else {
+    $this->save_file_update($file, true);
+}
