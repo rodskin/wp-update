@@ -1,0 +1,24 @@
+{
+  "name": "rodskin/wp-update",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-only",
+  "description": "WordPress Update plugin.",
+  "homepage": "https://github.com/rodskin/wp-admin",
+  "authors": [
+    {
+      "name": "Rod",
+      "homepage": "https://github.com/rodskin"
+    }
+  ],
+  "keywords": [
+    "wordpress",
+    "update"
+  ],
+  "support": {
+    "issues": "https://github.com/rodskin/wp-update/issues"
+  },
+  "require": {
+    "php": ">=5.3.3",
+    "composer/installers": "~1.0"
+  }
+}
