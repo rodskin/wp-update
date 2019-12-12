@@ -229,7 +229,7 @@ class WP_Update_Plugin
 
     public function get_local_json_path() {
 		$path = plugin_dir_path( __FILE__ ) . 'acf-json';
-		if is_multisite() {
+		if (is_multisite()) {
 			// we add blog id
 			$path .= '/' . get_current_blog_id();
 		}
@@ -238,7 +238,7 @@ class WP_Update_Plugin
 
     public function add_local_json_path( $paths ) {
 		$acf_path = plugin_dir_path( __FILE__ ) . 'acf-json';
-		if is_multisite() {
+		if (is_multisite()) {
 			// we add blog id
 			$acf_path .= '/' . get_current_blog_id();
 		}
