@@ -35,7 +35,12 @@ class WP_Update_Plugin
             add_filter( 'acf/settings/show_admin', '__return_false' );
         }
         add_action('admin_init', array($this, 'import_updates'));
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+		if (is_multisite()) {
+			add_action('network_admin_menu', array($this, 'add_network_admin_menu'));
+			add_action('network_admin_edit_wpupdatenetworkaction', array($this, 'network_save_settings'));
+		} else {
+			add_action('admin_menu', array($this, 'add_admin_menu'));
+		}
         add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_css_js'));
         // Save fields in functionality plugin
         add_filter( 'acf/settings/save_json', array( $this, 'get_local_json_path' ) );
@@ -58,10 +63,92 @@ class WP_Update_Plugin
         $user = wp_get_current_user()->roles[0];
         if($user == 'administrator') {
             add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'), 'dashicons-update', 666);
+			$hook = add_submenu_page('wp-update', 'Settings', 'Settings', 'manage_options', 'wp-update_settings', array($this, 'settings_html'));
+			//add_action('load-' . $hook, array($this, 'settings_html'));
+
         }
 
         add_filter( 'add_menu_classes', array($this, 'add_updates_bubble'));
     }
+	
+	public function add_network_admin_menu()
+    {
+        // show the menu link only for administrator
+        $user = wp_get_current_user()->roles[0];
+        if($user == 'administrator') {
+            add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'), 'dashicons-update', 666);
+			$hook = add_submenu_page('wp-update', 'Settings', 'Settings', 'manage_options', 'wp-update_network_settings', array($this, 'network_settings_html'));
+			//add_action('load-' . $hook, array($this, 'settings_html'));
+
+        }
+
+        add_filter( 'add_menu_classes', array($this, 'add_updates_bubble'));
+    }
+	
+	public function settings_html()
+    {
+        echo '<h1>' . get_admin_page_title() . '</h1>';
+?>
+        <form method="post" action="options.php">
+            <?php settings_fields('wp-update_settings'); ?>
+            <label>Choisir un sous-site avec ACF maitre</label>
+			<select name="wp-update_acf-master">
+				<option value=""<?php if (get_option('wp-update_acf-master') == '') { echo ' selected="selected"'; } ?>><?php echo __('No master site', 'wp-update'); ?></option>
+				<?php
+					$sites = get_sites();
+					foreach ($sites as $site) {
+						echo '<option value="' . $site->blog_id . '"';
+						if (get_option('wp-update_acf-master') == $site->blog_id) {
+							echo ' selected="selected"';
+						}
+						echo '>' . $site->domain . '</option>';
+					}
+				?>
+			</select>
+            <?php submit_button(__('Update settings', 'wp-update')); ?>
+        </form>
+<?php
+    }
+	
+	public function network_settings_html()
+    {
+        echo '<h1>' . get_admin_page_title() . '</h1>';
+?>
+        <form method="post" action="edit.php?action=wpupdatenetworkaction">
+            <?php wp_nonce_field( 'wpupdate-validate' ); ?>
+            <label>Choisir un sous-site avec ACF maitre network</label>
+			<select name="wp-update_acf-master">
+				<option value=""<?php if (get_site_option('wp-update_acf-master') == '') { echo ' selected="selected"'; } ?>><?php echo __('No master site', 'wp-update'); ?></option>
+				<?php
+					$sites = get_sites();
+					foreach ($sites as $site) {
+						echo '<option value="' . $site->blog_id . '"';
+						if (get_site_option('wp-update_acf-master') == $site->blog_id) {
+							echo ' selected="selected"';
+						}
+						echo '>' . $site->domain . '</option>';
+					}
+				?>
+			</select>
+            <?php submit_button(__('Update settings', 'wp-update')); ?>
+        </form>
+<?php
+    }
+	
+	public function network_save_settings ()
+	{
+		check_admin_referer( 'wpupdate-validate' ); // Nonce security check
+ 
+		update_site_option( 'wp-update_acf-master', $_POST['wp-update_acf-master'] );
+	 
+		wp_redirect( add_query_arg( array(
+			'page' => 'wp-update_network_settings',
+			'updated' => true ), network_admin_url('admin.php?page=wp-update_network_settings')
+		));
+	 
+		exit;
+	}
+
 
     public function add_updates_bubble( $menu )
     {
@@ -145,6 +232,7 @@ class WP_Update_Plugin
 
     public function import_updates()
     {
+		register_setting('wp-update_settings', 'wp-update_acf-master');
         //var_dump($_POST);die();
         if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
             $this->reupload_file($_GET['reload_update']);
@@ -232,17 +320,31 @@ class WP_Update_Plugin
 		if (is_multisite()) {
 			// we add blog id
 			$path .= '/' . get_current_blog_id();
+			if (!is_dir($path)) {
+				var_dump(mkdir($path, '0775'));
+			}
 		}
         return $path;
     }
 
     public function add_local_json_path( $paths ) {
 		$acf_path = plugin_dir_path( __FILE__ ) . 'acf-json';
+		//var_dump();die();
 		if (is_multisite()) {
 			// we add blog id
-			$acf_path .= '/' . get_current_blog_id();
+			$master_site = get_site_option('wp-update_acf-master');
+			//var_dump($master_site);
+			if ($master_site !== '' && $master_site != get_current_blog_id()) {
+				$paths[] = $acf_path . '/' . $master_site;
+			}
+			$add_path = $acf_path . '/' . get_current_blog_id();
+			if (!is_dir($add_path)) {
+				mkdir($add_path, '0775');
+			}
 		}
-        $paths[] = $acf_path;
+        $paths[] = $add_path;
+		//var_dump($paths);
+		//die();
 
         return $paths;
     }
