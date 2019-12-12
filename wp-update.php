@@ -17,6 +17,9 @@ class WP_Update_Plugin
 
     public function __construct()
     {
+		if (!defined('WP_ENVIRONNMENT')) {
+			new WP_Update_Messages(__('La constante WP_ENVIRONNMENT n\'est pas definie (local | preprod | prod)', 'wp-update'), 'error');
+		}
         $this->plugin_path = plugin_dir_path( __FILE__ );
         register_activation_hook(__FILE__, array('WP_Update_Plugin', 'install'));
         $this->add_hook();
@@ -82,8 +85,8 @@ class WP_Update_Plugin
 
     public function home_html()
     {
-        echo '<h1>' . get_admin_page_title() . '</h1>';
 ?>
+		<h1><?php echo get_admin_page_title(); ?></h1>
         <form method="post" id="wp-update" action="">
             <input type="hidden" name="wp-update_hidden" value="0" />
             <table id="wp-update_table" cellpading="0" cellspacing="0">
@@ -127,7 +130,7 @@ class WP_Update_Plugin
                 <?php } ?>
                 </tbody>
             </table>
-            <?php submit_button(); ?>
+            <?php submit_button(__('Update', 'wp-update')); ?>
         </form>
 <?php
     }
@@ -225,11 +228,19 @@ class WP_Update_Plugin
     }
 
     public function get_local_json_path() {
-        return plugin_dir_path( __FILE__ ) . 'acf-json';
+		$path = plugin_dir_path( __FILE__ ) . 'acf-json';
+		if is_multisite() {
+			$path .= '/' . get_current_blog_id();
+		}
+        return $path;
     }
 
     public function add_local_json_path( $paths ) {
-        $paths[] = plugin_dir_path( __FILE__ ) . 'acf-json';
+		$acf_path = plugin_dir_path( __FILE__ ) . 'acf-json';
+		if is_multisite() {
+			$acf_path .= '/' . get_current_blog_id();
+		}
+        $paths[] = $acf_path;
 
         return $paths;
     }
