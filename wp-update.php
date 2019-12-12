@@ -30,10 +30,10 @@ class WP_Update_Plugin
     public function add_hook()
     {
         // Only allow fields to be edited on development
-
         if ( (!defined( 'WP_ENVIRONNMENT' ) || !in_array(WP_ENVIRONNMENT, array('local', 'preprod'))) ) {
             add_filter( 'acf/settings/show_admin', '__return_false' );
         }
+		add_action('plugins_loaded', array($this,'plugin_init')); 
         add_action('admin_init', array($this, 'import_updates'));
 		if (is_multisite()) {
 			add_action('network_admin_menu', array($this, 'add_network_admin_menu'));
@@ -46,6 +46,11 @@ class WP_Update_Plugin
         add_filter( 'acf/settings/save_json', array( $this, 'get_local_json_path' ) );
         add_filter( 'acf/settings/load_json', array( $this, 'add_local_json_path' ) );
     }
+	
+	public function plugin_init ()
+	{
+		load_plugin_textdomain( 'wp-update', false, $this->plugin_path . '/languages/' );
+	}
 
     public static function install()
     {
