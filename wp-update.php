@@ -35,16 +35,20 @@ class WP_Update_Plugin
         }
 		add_action('plugins_loaded', array($this,'plugin_init')); 
         add_action('admin_init', array($this, 'import_updates'));
+        if (is_plugin_active('advanced-custom-fields-pro/acf.php') || is_plugin_active('advanced-custom-fields/acf.php')) {
+            //add_action('admin_init', array($this, 'sync_acf_fields'));
+            // Save fields in functionality plugin
+            add_filter('acf/settings/save_json', array($this, 'get_local_json_path'));
+            add_filter('acf/settings/load_json', array($this, 'add_local_json_path'));
+        }
 		if (is_multisite()) {
 			add_action('network_admin_menu', array($this, 'add_network_admin_menu'));
 			add_action('network_admin_edit_wpupdatenetworkaction', array($this, 'network_save_settings'));
 		} else {
 			add_action('admin_menu', array($this, 'add_admin_menu'));
 		}
-        add_action('admin_enqueue_scripts', array( $this, 'admin_enqueue_css_js'));
-        // Save fields in functionality plugin
-        add_filter( 'acf/settings/save_json', array( $this, 'get_local_json_path' ) );
-        add_filter( 'acf/settings/load_json', array( $this, 'add_local_json_path' ) );
+
+        add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_css_js'));
     }
 	
 	public function plugin_init ()
@@ -237,6 +241,40 @@ class WP_Update_Plugin
         }
     }
 
+    public function sync_acf_fields ()
+    {
+        // vars
+        $groups = acf_get_field_groups();
+        $sync   = array();
+        // bail early if no field groups
+        if( empty( $groups ) ) {
+            return;
+        }
+        //var_dump($groups);die();
+        // find JSON field groups which have not yet been imported
+        foreach( $groups as $group ) {
+
+            // vars
+            $local      = acf_maybe_get( $group, 'local', false );
+            $modified   = acf_maybe_get( $group, 'modified', 0 );
+            $private    = acf_maybe_get( $group, 'private', false );
+            // ignore DB / PHP / private field groups
+            if( $local !== 'json' || $private ) {
+
+                // do nothing
+
+            } elseif( ! $group[ 'ID' ] ) {
+
+                $sync[ $group[ 'key' ] ] = $group;
+
+            } elseif( $modified && $modified > get_post_modified_time( 'U', true, $group[ 'ID' ], true ) ) {
+
+                $sync[ $group[ 'key' ] ]  = $group;
+            }
+        }
+        var_dump($sync);
+    }
+
     public function get_scanned_dir_files ($path)
     {
         $scan_ommit = array('..', '.', '.gitkeep');
@@ -310,15 +348,17 @@ class WP_Update_Plugin
 
     }
 
-    public function get_local_json_path() {
+    public function get_local_json_path($path) {
+        //die('merde');
 		$path = plugin_dir_path( __FILE__ ) . 'acf-json';
 		if (is_multisite()) {
 			// we add blog id
 			$path .= '/' . get_current_blog_id();
 			if (!is_dir($path)) {
-				var_dump(mkdir($path, '0775'));
+				mkdir($path, '0775');
 			}
 		}
+		//var_dump($path);die();
         return $path;
     }
 
@@ -338,9 +378,6 @@ class WP_Update_Plugin
 			}
 		}
         $paths[] = $add_path;
-		//var_dump($paths);
-		//die();
-
         return $paths;
     }
 }
