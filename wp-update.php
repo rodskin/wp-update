@@ -36,7 +36,6 @@ class WP_Update_Plugin
 		add_action('plugins_loaded', array($this,'plugin_init')); 
         add_action('admin_init', array($this, 'import_updates'));
         if (is_plugin_active('advanced-custom-fields-pro/acf.php') || is_plugin_active('advanced-custom-fields/acf.php')) {
-            //add_action('admin_init', array($this, 'sync_acf_fields'));
             // Save fields in functionality plugin
             add_filter('acf/settings/save_json', array($this, 'get_local_json_path'));
             add_filter('acf/settings/load_json', array($this, 'add_local_json_path'));
@@ -155,6 +154,10 @@ class WP_Update_Plugin
     {
         $pending_count = $this->get_updates_bubble_count(); // Use your code to create this number
         $menu[666][0] .= " <span class='update-plugins count-$pending_count'><span class='plugin-count'>" . number_format_i18n($pending_count) . '</span></span>';
+        if (is_plugin_active('advanced-custom-fields-pro/acf.php') || is_plugin_active('advanced-custom-fields/acf.php')) {
+            $acf_num_to_sync = $this->sync_acf_fields();
+            $menu['80.025'][0] .= ' <span class="update-plugins count-' . $acf_num_to_sync . '"><span class="plugin-count">(sync: ' . number_format_i18n($acf_num_to_sync) . ')</span></span>';
+        }
         return $menu;
     }
 
@@ -248,9 +251,9 @@ class WP_Update_Plugin
         $sync   = array();
         // bail early if no field groups
         if( empty( $groups ) ) {
-            return;
+            return 0;
         }
-        //var_dump($groups);die();
+
         // find JSON field groups which have not yet been imported
         foreach( $groups as $group ) {
 
@@ -272,7 +275,7 @@ class WP_Update_Plugin
                 $sync[ $group[ 'key' ] ]  = $group;
             }
         }
-        var_dump($sync);
+        return count($sync);
     }
 
     public function get_scanned_dir_files ($path)
@@ -312,7 +315,6 @@ class WP_Update_Plugin
                 WHERE `ID` = ' . $id . '
                 LIMIT 1';
         $file_infos = $wpdb->get_results($sql);
-        //print_r($file_infos);die();
         $directory = plugin_dir_path( __FILE__ ) . 'data';
         if (!empty($file_infos)) {
             $sql = 'DELETE FROM `' . $wpdb->prefix . 'wp_update` WHERE `ID` = ' . $id;
@@ -321,17 +323,13 @@ class WP_Update_Plugin
         } else {
             new WP_Update_Messages('Fichier inexistant', 'error');
         }
-
     }
 
     public function save_file_update ($filename, $status)
     {
-        //var_dump($status); die();
         global $wpdb;
         $sql = 'INSERT INTO `' . $wpdb->prefix . 'wp_update` (`name`, `status`, `date_install`) VALUES ("' . $filename . '", "' . ($status !== false ? '1' : '0') . '", "' . date('Y-m-d') . '")';
         $query_result = $wpdb->query($sql);
-        //var_dump($sql);
-        //die();
         if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
             wp_redirect('admin.php?page=wp-update');
             exit;
@@ -348,8 +346,7 @@ class WP_Update_Plugin
 
     }
 
-    public function get_local_json_path($path) {
-        //die('merde');
+    public function get_local_json_path() {
 		$path = plugin_dir_path( __FILE__ ) . 'acf-json';
 		if (is_multisite()) {
 			// we add blog id
@@ -358,26 +355,26 @@ class WP_Update_Plugin
 				mkdir($path, '0775');
 			}
 		}
-		//var_dump($path);die();
         return $path;
     }
 
     public function add_local_json_path( $paths ) {
+        $paths = array();
 		$acf_path = plugin_dir_path( __FILE__ ) . 'acf-json';
-		//var_dump();die();
 		if (is_multisite()) {
 			// we add blog id
 			$master_site = get_site_option('wp-update_acf-master');
-			//var_dump($master_site);
 			if ($master_site !== '' && $master_site != get_current_blog_id()) {
 				$paths[] = $acf_path . '/' . $master_site;
 			}
-			$add_path = $acf_path . '/' . get_current_blog_id();
+            $add_path = $acf_path . '/' . get_current_blog_id();
 			if (!is_dir($add_path)) {
 				mkdir($add_path, '0775');
 			}
-		}
-        $paths[] = $add_path;
+			$paths = $add_path;
+		} else {
+            $paths[] = $acf_path;
+        }
         return $paths;
     }
 }
