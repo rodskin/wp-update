@@ -68,9 +68,6 @@ class WP_Update_Plugin
         $user = wp_get_current_user()->roles[0];
         if($user == 'administrator') {
             add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'), 'dashicons-update', 666);
-			$hook = add_submenu_page('wp-update', 'Settings', 'Settings', 'manage_options', 'wp-update_settings', array($this, 'settings_html'));
-			//add_action('load-' . $hook, array($this, 'settings_html'));
-
         }
 
         add_filter( 'add_menu_classes', array($this, 'add_updates_bubble'));
@@ -83,8 +80,6 @@ class WP_Update_Plugin
         if($user == 'administrator') {
             add_menu_page('WP Update', 'WP Update', 'manage_options', 'wp-update', array($this, 'home_html'), 'dashicons-update', 666);
 			$hook = add_submenu_page('wp-update', 'Settings', 'Settings', 'manage_options', 'wp-update_network_settings', array($this, 'network_settings_html'));
-			//add_action('load-' . $hook, array($this, 'settings_html'));
-
         }
 
         add_filter( 'add_menu_classes', array($this, 'add_updates_bubble'));
@@ -143,14 +138,11 @@ class WP_Update_Plugin
 	public function network_save_settings ()
 	{
 		check_admin_referer( 'wpupdate-validate' ); // Nonce security check
- 
 		update_site_option( 'wp-update_acf-master', $_POST['wp-update_acf-master'] );
-	 
 		wp_redirect( add_query_arg( array(
 			'page' => 'wp-update_network_settings',
 			'updated' => true ), network_admin_url('admin.php?page=wp-update_network_settings')
 		));
-	 
 		exit;
 	}
 
@@ -237,8 +229,6 @@ class WP_Update_Plugin
 
     public function import_updates()
     {
-		register_setting('wp-update_settings', 'wp-update_acf-master');
-        //var_dump($_POST);die();
         if (isset($_GET['reload_update']) && $_GET['reload_update'] != '') {
             $this->reupload_file($_GET['reload_update']);
         }
