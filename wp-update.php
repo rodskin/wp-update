@@ -346,3 +346,10 @@ class WP_Update_Plugin
 }
 
 new WP_Update_Plugin();
+
+/**
+ * TODO
+ * option pour auto update des fields ?
+ * ajout de la bulle des ACF en attente de synchro
+ * https://stackoverflow.com/questions/41171129/including-acf-advanced-custom-fields-in-a-custom-theme-or-plugin-exporting-fi
+ */
