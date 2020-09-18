@@ -31,7 +31,7 @@ class WP_Update_Plugin
     {
         // Only allow fields to be edited on development
         if ( (!defined( 'WP_ENVIRONNMENT' ) || !in_array(WP_ENVIRONNMENT, array('local', 'preprod'))) ) {
-            add_filter( 'acf/settings/show_admin', '__return_false' );
+            //add_filter( 'acf/settings/show_admin', '__return_false' );
         }
 		add_action('plugins_loaded', array($this,'plugin_init')); 
         add_action('admin_init', array($this, 'import_updates'));
